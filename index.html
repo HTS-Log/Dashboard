@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard - HTS LOGÍSTICA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <link rel="shortcut icon" href="logo.png" type="image/png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="light-mode">
+  <header>
+    <img src="logo.png" class="logo" alt="HTS">
+    <h1>📦 Dashboard de Carregamentos - HTS</h1>
+  </header>
+
+  <div class="container">
+    <div class="filtros">
+      <input type="date" id="filtro-data">
+      <input type="text" id="filtro-produto" placeholder="Filtrar por produto...">
+      <button id="recarregar">🔄 Recarregar</button>
+      <button id="exportar-pdf">📥 Exportar PDF</button>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead><tr id="cabecalho"></tr></thead>
+        <tbody id="corpo-tabela"></tbody>
+      </table>
+    </div>
+
+    <canvas id="grafico" height="100"></canvas>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

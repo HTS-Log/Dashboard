@@ -1,0 +1,189 @@
+/* Reset e corpo */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;  /* bloqueia qualquer scroll horizontal */
+  width: 100vw;        /* garante que não ultrapasse a largura da viewport */
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  color: #111;
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Header */
+header {
+  background-color: #1f1f1f;
+  color: white;
+  padding: 30px 20px;
+  text-align: center;
+  position: relative;
+  max-width: none;
+  margin: 0 auto 20px;
+}
+
+header img.logo {
+  position: absolute;
+  left: 30px;
+  top: 20px;
+  width: 120px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 3rem;
+}
+
+/* Container centralizado */
+.container {
+  width: 95%;
+  max-width: none;
+  margin: 0 auto 30px;
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  flex: none;
+  box-sizing: border-box;
+}
+
+/* Filtros */
+.filtros {
+  display: flex;
+  justify-content: center;
+  margin: 20px auto;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.filtros input, .filtros button {
+  padding: 12px 18px;
+  font-size: 1.25rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+/* Container da tabela */
+.table-container {
+  overflow-x: auto; /* scroll horizontal só se necessário */
+  max-width: 100%;
+  box-sizing: border-box;
+  flex: none;
+}
+
+/* Tabela */
+table {
+  width: 100%;
+  margin: auto;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 1.25rem;
+  table-layout: fixed; /* colunas com largura fixa */
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 20px 25px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+th {
+  background-color: green;
+  color: white;
+  text-transform: uppercase;
+}
+
+tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Responsividade para telas menores */
+@media screen and (max-width: 768px) {
+  .table-container {
+    overflow-x: auto;
+    display: block;
+    width: 100%;
+  }
+
+  table {
+    width: 100%;
+    max-width: none;
+    font-size: 1rem;
+  }
+
+  th, td {
+    padding: 12px 15px;
+  }
+
+  header h1 {
+    font-size: 2rem;
+  }
+
+  .filtros input, .filtros button {
+    font-size: 1rem;
+    padding: 10px 14px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  table {
+    font-size: 0.9rem;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  th, td {
+    padding: 8px 10px;
+  }
+
+  .filtros input, .filtros button {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+}
+
+/* Ajustes para telas muito grandes (TV 4K) */
+@media screen and (min-width: 1920px) {
+  body {
+    font-size: 18px; /* base maior para todo texto */
+  }
+
+  .container {
+    width: 95%;
+    max-width: none;
+    padding: 40px;
+  }
+
+  header h1 {
+    font-size: 4rem;
+  }
+
+  header img.logo {
+    width: 140px;
+    top: 25px;
+    left: 30px;
+  }
+
+  table {
+    font-size: 1.5rem;
+  }
+
+  th, td {
+    padding: 25px 30px;
+  }
+
+  .filtros input, .filtros button {
+    font-size: 1.5rem;
+    padding: 15px 22px;
+  }
+}

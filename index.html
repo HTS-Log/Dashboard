@@ -15,20 +15,23 @@
     <h1>📦 Dashboard de Carregamentos - HTS</h1>
   </header>
 
-  <!-- Filtros adicionados -->
-  <div class="filtros">
-    <input type="date" id="filtro-data" />
-    <button id="recarregar">Recarregar</button>
-  </div>
+  <div class="container">
+    <div class="filtros">
+      <input type="date" id="filtro-data">
+      <input type="text" id="filtro-produto" placeholder="Filtrar por produto...">
+      <button id="recarregar">🔄 Recarregar</button>
+      <button id="exportar-pdf">📥 Exportar PDF</button>
+    </div>
 
-  <div class="table-container">
-    <table>
-      <thead><tr id="cabecalho"></tr></thead>
-      <tbody id="corpo-tabela"></tbody>
-    </table>
-  </div>
+    <div class="table-container">
+      <table>
+        <thead><tr id="cabecalho"></tr></thead>
+        <tbody id="corpo-tabela"></tbody>
+      </table>
+    </div>
 
-  <canvas id="grafico" height="100"></canvas>
+    <canvas id="grafico" height="100"></canvas>
+  </div>
 
   <script src="script.js"></script>
 </body>

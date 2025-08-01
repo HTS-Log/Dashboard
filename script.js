@@ -26,14 +26,10 @@ function formatarData(dataStr) {
   return `${dia}/${mes}/${ano}`;
 }
 
-function carregarDados() {
+function carregarDados(filtroData = null) {
   fetch(urlAPI)
     .then((res) => res.json())
     .then((dados) => {
-      const hoje = new Date();
-      const diaHoje = hoje.getDate();
-
-      // Remove linhas com textos indesejados e filtra pelo dia atual independente do mês/ano
       const dadosFiltrados = dados.filter((linha) => {
         const temTextoIndesejado = Object.values(linha).some((valor) => {
           return excluirPorTexto.some((padrao) =>
@@ -42,26 +38,31 @@ function carregarDados() {
         });
         if (temTextoIndesejado) return false;
 
-        const dataLinha = new Date(linha.DATA);
-        if (isNaN(dataLinha)) return false;
+        if (filtroData) {
+          const dataLinha = new Date(linha.DATA);
+          return (
+            dataLinha.getDate() === filtroData.getDate() &&
+            dataLinha.getMonth() === filtroData.getMonth() &&
+            dataLinha.getFullYear() === filtroData.getFullYear()
+          );
+        }
 
-        return dataLinha.getDate() === diaHoje;
+        return true;
       });
-
-      if (dadosFiltrados.length === 0) {
-        // Se quiser, pode mostrar uma mensagem ou exibir tudo como fallback
-        console.warn("Nenhum carregamento encontrado para o dia atual.");
-      }
-
-      // Remove coluna "EMBARCADOR"
-      const colunas = Object.keys(dadosFiltrados[0] || {})
-        .filter((k) => !k.startsWith("COR_") && k !== "EMBARCADOR");
 
       const cabecalho = document.getElementById("cabecalho");
       const corpo = document.getElementById("corpo-tabela");
 
       cabecalho.innerHTML = "";
       corpo.innerHTML = "";
+
+      if (dadosFiltrados.length === 0) {
+        corpo.innerHTML = `<tr><td colspan="100%">Nenhum dado encontrado.</td></tr>`;
+        return;
+      }
+
+      const colunas = Object.keys(dadosFiltrados[0] || {})
+        .filter((k) => !k.startsWith("COR_") && k !== "EMBARCADOR");
 
       colunas.forEach((col) => {
         const th = document.createElement("th");
@@ -73,11 +74,7 @@ function carregarDados() {
         const tr = document.createElement("tr");
         colunas.forEach((col) => {
           const td = document.createElement("td");
-          if (col === "DATA") {
-            td.textContent = formatarData(linha[col]);
-          } else {
-            td.textContent = linha[col];
-          }
+          td.textContent = col === "DATA" ? formatarData(linha[col]) : linha[col];
           td.style.backgroundColor = linha["COR_" + col] || "transparent";
           tr.appendChild(td);
         });
@@ -90,38 +87,21 @@ function carregarDados() {
 }
 
 carregarDados();
-setInterval(carregarDados, 20000); // Atualiza a cada 20 segundos
+setInterval(() => carregarDados(), 20000);
 
-// Eventos dos botões
-document.getElementById("recarregar").addEventListener("click", carregarDados);
-
-// Filtragem básica no input produto
-document.getElementById("filtro-produto").addEventListener("input", () => {
-  const filtro = document.getElementById("filtro-produto").value.toLowerCase();
-  const linhas = document.querySelectorAll("#corpo-tabela tr");
-  linhas.forEach((tr) => {
-    const produto = tr.children[5]?.textContent.toLowerCase() || ""; // Ajuste índice conforme a coluna PRODUTO
-    tr.style.display = produto.includes(filtro) ? "" : "none";
-  });
+// Botão "Recarregar" - limpa filtro e carrega todos os dados
+document.getElementById("recarregar").addEventListener("click", () => {
+  document.getElementById("filtro-data").value = "";
+  carregarDados();
 });
 
-// Filtragem data pelo input filtro-data
+// Filtro por data (yyyy-mm-dd)
 document.getElementById("filtro-data").addEventListener("change", () => {
-  const valorData = document.getElementById("filtro-data").value; // formato yyyy-mm-dd
+  const valorData = document.getElementById("filtro-data").value;
   if (!valorData) {
     carregarDados();
-    return;
+  } else {
+    const dataFiltro = new Date(valorData);
+    carregarDados(dataFiltro);
   }
-  const dataFiltro = new Date(valorData);
-  const linhas = document.querySelectorAll("#corpo-tabela tr");
-  linhas.forEach((tr) => {
-    const dataTexto = tr.children[0]?.textContent; // coluna DATA formatada dd/mm/aaaa
-    if (!dataTexto) {
-      tr.style.display = "none";
-      return;
-    }
-    const [dia, mes, ano] = dataTexto.split("/");
-    const dataLinha = new Date(`${ano}-${mes}-${dia}`);
-    tr.style.display = dataLinha.getTime() === dataFiltro.getTime() ? "" : "none";
-  });
 });

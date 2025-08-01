@@ -15,17 +15,20 @@
     <h1>📦 Dashboard de Carregamentos - HTS</h1>
   </header>
 
-
-
-    <div class="table-container">
-      <table>
-        <thead><tr id="cabecalho"></tr></thead>
-        <tbody id="corpo-tabela"></tbody>
-      </table>
-    </div>
-
-    <canvas id="grafico" height="100"></canvas>
+  <!-- Filtros adicionados -->
+  <div class="filtros">
+    <input type="date" id="filtro-data" />
+    <button id="recarregar">Recarregar</button>
   </div>
+
+  <div class="table-container">
+    <table>
+      <thead><tr id="cabecalho"></tr></thead>
+      <tbody id="corpo-tabela"></tbody>
+    </table>
+  </div>
+
+  <canvas id="grafico" height="100"></canvas>
 
   <script src="script.js"></script>
 </body>

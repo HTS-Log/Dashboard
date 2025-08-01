@@ -26,28 +26,31 @@ function formatarData(dataStr) {
   return `${dia}/${mes}/${ano}`;
 }
 
-function carregarDados(filtroData = null) {
+function carregarDados() {
   fetch(urlAPI)
     .then((res) => res.json())
     .then((dados) => {
+      const hoje = new Date();
+      const diaHoje = hoje.getDate();
+      const mesHoje = hoje.getMonth();
+      const anoHoje = hoje.getFullYear();
+
       const dadosFiltrados = dados.filter((linha) => {
-        const temTextoIndesejado = Object.values(linha).some((valor) => {
-          return excluirPorTexto.some((padrao) =>
+        const temTextoIndesejado = Object.values(linha).some((valor) =>
+          excluirPorTexto.some((padrao) =>
             String(valor).toUpperCase().includes(padrao.toUpperCase())
-          );
-        });
+          )
+        );
         if (temTextoIndesejado) return false;
 
-        if (filtroData) {
-          const dataLinha = new Date(linha.DATA);
-          return (
-            dataLinha.getDate() === filtroData.getDate() &&
-            dataLinha.getMonth() === filtroData.getMonth() &&
-            dataLinha.getFullYear() === filtroData.getFullYear()
-          );
-        }
+        const dataLinha = new Date(linha.DATA);
+        if (isNaN(dataLinha)) return false;
 
-        return true;
+        return (
+          dataLinha.getDate() === diaHoje &&
+          dataLinha.getMonth() === mesHoje &&
+          dataLinha.getFullYear() === anoHoje
+        );
       });
 
       const cabecalho = document.getElementById("cabecalho");
@@ -57,12 +60,13 @@ function carregarDados(filtroData = null) {
       corpo.innerHTML = "";
 
       if (dadosFiltrados.length === 0) {
-        corpo.innerHTML = `<tr><td colspan="100%">Nenhum dado encontrado.</td></tr>`;
+        corpo.innerHTML = `<tr><td colspan="100%">Nenhum dado encontrado para hoje (${formatarData(hoje)})</td></tr>`;
         return;
       }
 
-      const colunas = Object.keys(dadosFiltrados[0] || {})
-        .filter((k) => !k.startsWith("COR_") && k !== "EMBARCADOR");
+      const colunas = Object.keys(dadosFiltrados[0] || {}).filter(
+        (k) => !k.startsWith("COR_") && k !== "EMBARCADOR"
+      );
 
       colunas.forEach((col) => {
         const th = document.createElement("th");
@@ -87,21 +91,4 @@ function carregarDados(filtroData = null) {
 }
 
 carregarDados();
-setInterval(() => carregarDados(), 20000);
-
-// Botão "Recarregar" - limpa filtro e carrega todos os dados
-document.getElementById("recarregar").addEventListener("click", () => {
-  document.getElementById("filtro-data").value = "";
-  carregarDados();
-});
-
-// Filtro por data (yyyy-mm-dd)
-document.getElementById("filtro-data").addEventListener("change", () => {
-  const valorData = document.getElementById("filtro-data").value;
-  if (!valorData) {
-    carregarDados();
-  } else {
-    const dataFiltro = new Date(valorData);
-    carregarDados(dataFiltro);
-  }
-});
+setInterval(carregarDados, 20000);

@@ -115,7 +115,7 @@ function carregarDados() {
 
 // Rotinas de inicialização
 carregarDados();
-setInterval(carregarDados, 20000);
+setInterval(carregarDados, 5000);
 
 // Event Listeners (sem alterações)
 document.getElementById("recarregar")?.addEventListener("click", carregarDados);

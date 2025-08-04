@@ -1,4 +1,4 @@
-const urlAPI = "https://script.google.com/macros/s/AKfycbwBYJ0da3oE--S7T9lbBAZR2DvWSgjCeC-N1HDxfAXGNn0ZPYHRsS1HVuNUI3GjthnU/exec";
+const urlAPI = "https://script.google.com/macros/s/AKfycbzAFVKT14pT_AmstlzlgKVxQm9bH3tNtSPOZrEpmVHqRZQAlDqufaxbXAJXq03ffaZV/exec";
 
 const excluirPorTexto = [
   "CRIAR ORDEM",
@@ -18,8 +18,11 @@ const excluirPorTexto = [
 ];
 
 function formatarData(dataStr) {
+  // Criar a data a partir do string (que vem em UTC da planilha)
   const data = new Date(dataStr);
   if (isNaN(data)) return dataStr;
+
+  // Usar os componentes da data no fuso horário local para exibição correta
   const dia = String(data.getDate()).padStart(2, "0");
   const mes = String(data.getMonth() + 1).padStart(2, "0");
   const ano = data.getFullYear();
@@ -28,40 +31,59 @@ function formatarData(dataStr) {
 
 function carregarDados() {
   fetch(urlAPI)
-    .then((res) => res.json())
+    .then((res) => {
+        if (!res.ok) {
+            throw new Error(`Erro na rede: ${res.statusText}`);
+        }
+        return res.json();
+    })
     .then((dados) => {
-      const hoje = new Date();
-      const diaHoje = hoje.getDate();
+        
+      // Se o servidor retornou um erro (ex: aba não encontrada), exiba-o.
+      if (dados.erro) {
+          throw new Error(dados.erro);
+      }
 
-      // Remove linhas com textos indesejados e filtra pelo dia atual independente do mês/ano
+      const hoje = new Date();
+
       const dadosFiltrados = dados.filter((linha) => {
-        const temTextoIndesejado = Object.values(linha).some((valor) => {
-          return excluirPorTexto.some((padrao) =>
+        const temTextoIndesejado = Object.values(linha).some((valor) =>
+          excluirPorTexto.some((padrao) =>
             String(valor).toUpperCase().includes(padrao.toUpperCase())
-          );
-        });
+          )
+        );
         if (temTextoIndesejado) return false;
 
+        if (!linha.DATA) return false;
+        
+        // ===== ESTA É A CORREÇÃO MAIS IMPORTANTE =====
+        // Cria um objeto Date a partir do dado da planilha.
+        // O navegador converte automaticamente o horário UTC para o fuso local.
         const dataLinha = new Date(linha.DATA);
         if (isNaN(dataLinha)) return false;
 
-        return dataLinha.getDate() === diaHoje;
+        // Comparamos ano, mês e dia no fuso horário local. Esta é a forma mais segura.
+        return (
+          dataLinha.getFullYear() === hoje.getFullYear() &&
+          dataLinha.getMonth() === hoje.getMonth() &&
+          dataLinha.getDate() === hoje.getDate()
+        );
       });
 
-      if (dadosFiltrados.length === 0) {
-        // Se quiser, pode mostrar uma mensagem ou exibir tudo como fallback
-        console.warn("Nenhum carregamento encontrado para o dia atual.");
-      }
-
-      // Remove coluna "EMBARCADOR"
-      const colunas = Object.keys(dadosFiltrados[0] || {})
-        .filter((k) => !k.startsWith("COR_") && k !== "EMBARCADOR");
-
-      const cabecalho = document.getElementById("cabecalho");
       const corpo = document.getElementById("corpo-tabela");
-
-      cabecalho.innerHTML = "";
+      const cabecalho = document.getElementById("cabecalho");
       corpo.innerHTML = "";
+      cabecalho.innerHTML = "";
+
+      if (dadosFiltrados.length === 0) {
+        console.warn("Nenhum carregamento encontrado para o dia atual.");
+        corpo.innerHTML = '<tr><td colspan="12" style="text-align:center;">Nenhum carregamento para hoje.</td></tr>';
+        return;
+      }
+      
+      const colunas = Object.keys(dadosFiltrados[0] || {}).filter(
+        (k) => !k.startsWith("COR_") && k !== "EMBARCADOR"
+      );
 
       colunas.forEach((col) => {
         const th = document.createElement("th");
@@ -86,42 +108,44 @@ function carregarDados() {
     })
     .catch((err) => {
       console.error("Erro ao carregar dados:", err);
+      const corpo = document.getElementById("corpo-tabela");
+      corpo.innerHTML = `<tr><td colspan="12" style="text-align:center;">Erro: ${err.message}</td></tr>`;
     });
 }
 
+// Rotinas de inicialização
 carregarDados();
-setInterval(carregarDados, 20000); // Atualiza a cada 20 segundos
+setInterval(carregarDados, 20000);
 
-// Eventos dos botões
-document.getElementById("recarregar").addEventListener("click", carregarDados);
+// Event Listeners (sem alterações)
+document.getElementById("recarregar")?.addEventListener("click", carregarDados);
 
-// Filtragem básica no input produto
-document.getElementById("filtro-produto").addEventListener("input", () => {
+document.getElementById("filtro-produto")?.addEventListener("input", () => {
   const filtro = document.getElementById("filtro-produto").value.toLowerCase();
   const linhas = document.querySelectorAll("#corpo-tabela tr");
   linhas.forEach((tr) => {
-    const produto = tr.children[5]?.textContent.toLowerCase() || ""; // Ajuste índice conforme a coluna PRODUTO
+    const produto = tr.children[5]?.textContent.toLowerCase() || "";
     tr.style.display = produto.includes(filtro) ? "" : "none";
   });
 });
 
-// Filtragem data pelo input filtro-data
-document.getElementById("filtro-data").addEventListener("change", () => {
-  const valorData = document.getElementById("filtro-data").value; // formato yyyy-mm-dd
+document.getElementById("filtro-data")?.addEventListener("change", () => {
+  const valorData = document.getElementById("filtro-data").value;
   if (!valorData) {
-    carregarDados();
+    // Apenas remove o filtro visual, não recarrega os dados
+    document.querySelectorAll("#corpo-tabela tr").forEach(tr => tr.style.display = "");
     return;
   }
-  const dataFiltro = new Date(valorData);
+  const dataFiltro = new Date(valorData + "T00:00:00"); // Adiciona T00:00 para evitar problemas de fuso
   const linhas = document.querySelectorAll("#corpo-tabela tr");
   linhas.forEach((tr) => {
-    const dataTexto = tr.children[0]?.textContent; // coluna DATA formatada dd/mm/aaaa
+    const dataTexto = tr.children[0]?.textContent;
     if (!dataTexto) {
       tr.style.display = "none";
       return;
     }
     const [dia, mes, ano] = dataTexto.split("/");
-    const dataLinha = new Date(`${ano}-${mes}-${dia}`);
+    const dataLinha = new Date(`${ano}-${mes}-${dia}T00:00:00`);
     tr.style.display = dataLinha.getTime() === dataFiltro.getTime() ? "" : "none";
   });
 });

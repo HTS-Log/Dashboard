@@ -17,36 +17,49 @@ const excluirPorTexto = [
   "🚚 HTS LOGISTICA E TRANSPORTES LTDA"
 ];
 
+
+// ============================
+// FUNÇÕES DE DATA (À PROVA DE 2026)
+// ============================
+
+// Retorna data no formato yyyy-mm-dd no fuso do Brasil
+function dataLocalISO(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
+// Formata data para dd/mm/yyyy (Brasil)
 function formatarData(dataStr) {
-  // Criar a data a partir do string (que vem em UTC da planilha)
   const data = new Date(dataStr);
   if (isNaN(data)) return dataStr;
 
-  // Usar os componentes da data no fuso horário local para exibição correta
-  const dia = String(data.getDate()).padStart(2, "0");
-  const mes = String(data.getMonth() + 1).padStart(2, "0");
-  const ano = data.getFullYear();
-  return `${dia}/${mes}/${ano}`;
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo"
+  }).format(data);
 }
 
+
+// ============================
+// CARREGAMENTO DE DADOS
+// ============================
+
 function carregarDados() {
-  fetch(urlAPI)
+  fetch(urlAPI + "?t=" + Date.now()) // evita cache
     .then((res) => {
-        if (!res.ok) {
-            throw new Error(`Erro na rede: ${res.statusText}`);
-        }
-        return res.json();
+      if (!res.ok) throw new Error(`Erro na rede: ${res.statusText}`);
+      return res.json();
     })
     .then((dados) => {
-        
-      // Se o servidor retornou um erro (ex: aba não encontrada), exiba-o.
-      if (dados.erro) {
-          throw new Error(dados.erro);
-      }
+      if (dados.erro) throw new Error(dados.erro);
 
-      const hoje = new Date();
+      const hojeISO = dataLocalISO();
 
       const dadosFiltrados = dados.filter((linha) => {
+        // Excluir textos indesejados
         const temTextoIndesejado = Object.values(linha).some((valor) =>
           excluirPorTexto.some((padrao) =>
             String(valor).toUpperCase().includes(padrao.toUpperCase())
@@ -55,97 +68,118 @@ function carregarDados() {
         if (temTextoIndesejado) return false;
 
         if (!linha.DATA) return false;
-        
-        // ===== ESTA É A CORREÇÃO MAIS IMPORTANTE =====
-        // Cria um objeto Date a partir do dado da planilha.
-        // O navegador converte automaticamente o horário UTC para o fuso local.
-        const dataLinha = new Date(linha.DATA);
-        if (isNaN(dataLinha)) return false;
 
-        // Comparamos ano, mês e dia no fuso horário local. Esta é a forma mais segura.
-        return (
-          dataLinha.getFullYear() === hoje.getFullYear() &&
-          dataLinha.getMonth() === hoje.getMonth() &&
-          dataLinha.getDate() === hoje.getDate()
-        );
+        const dataLinhaISO = dataLocalISO(new Date(linha.DATA));
+        return dataLinhaISO === hojeISO;
       });
 
       const corpo = document.getElementById("corpo-tabela");
       const cabecalho = document.getElementById("cabecalho");
+
       corpo.innerHTML = "";
       cabecalho.innerHTML = "";
 
       if (dadosFiltrados.length === 0) {
-        console.warn("Nenhum carregamento encontrado para o dia atual.");
-        corpo.innerHTML = '<tr><td colspan="12" style="text-align:center;">Nenhum carregamento para hoje.</td></tr>';
+        corpo.innerHTML = `
+          <tr>
+            <td colspan="20" style="text-align:center;">
+              Nenhum carregamento para hoje.
+            </td>
+          </tr>`;
         return;
       }
-      
-      const colunas = Object.keys(dadosFiltrados[0] || {}).filter(
+
+      const colunas = Object.keys(dadosFiltrados[0]).filter(
         (k) => !k.startsWith("COR_") && k !== "EMBARCADOR"
       );
 
+      // Cabeçalho
       colunas.forEach((col) => {
         const th = document.createElement("th");
         th.textContent = col;
         cabecalho.appendChild(th);
       });
 
+      // Linhas
       dadosFiltrados.forEach((linha) => {
         const tr = document.createElement("tr");
+
         colunas.forEach((col) => {
           const td = document.createElement("td");
+
           if (col === "DATA") {
             td.textContent = formatarData(linha[col]);
           } else {
-            td.textContent = linha[col];
+            td.textContent = linha[col] ?? "";
           }
+
           td.style.backgroundColor = linha["COR_" + col] || "transparent";
           tr.appendChild(td);
         });
+
         corpo.appendChild(tr);
       });
     })
     .catch((err) => {
       console.error("Erro ao carregar dados:", err);
       const corpo = document.getElementById("corpo-tabela");
-      corpo.innerHTML = `<tr><td colspan="12" style="text-align:center;">Erro: ${err.message}</td></tr>`;
+      corpo.innerHTML = `
+        <tr>
+          <td colspan="20" style="text-align:center;color:red;">
+            Erro: ${err.message}
+          </td>
+        </tr>`;
     });
 }
 
-// Rotinas de inicialização
+
+// ============================
+// INICIALIZAÇÃO
+// ============================
+
 carregarDados();
 setInterval(carregarDados, 5000);
 
-// Event Listeners (sem alterações)
+
+// ============================
+// EVENTOS
+// ============================
+
+// Botão recarregar
 document.getElementById("recarregar")?.addEventListener("click", carregarDados);
 
+// Filtro por produto
 document.getElementById("filtro-produto")?.addEventListener("input", () => {
   const filtro = document.getElementById("filtro-produto").value.toLowerCase();
-  const linhas = document.querySelectorAll("#corpo-tabela tr");
-  linhas.forEach((tr) => {
+  document.querySelectorAll("#corpo-tabela tr").forEach((tr) => {
     const produto = tr.children[5]?.textContent.toLowerCase() || "";
     tr.style.display = produto.includes(filtro) ? "" : "none";
   });
 });
 
+// Filtro por data manual
 document.getElementById("filtro-data")?.addEventListener("change", () => {
   const valorData = document.getElementById("filtro-data").value;
+
   if (!valorData) {
-    // Apenas remove o filtro visual, não recarrega os dados
-    document.querySelectorAll("#corpo-tabela tr").forEach(tr => tr.style.display = "");
+    document.querySelectorAll("#corpo-tabela tr").forEach(
+      (tr) => (tr.style.display = "")
+    );
     return;
   }
-  const dataFiltro = new Date(valorData + "T00:00:00"); // Adiciona T00:00 para evitar problemas de fuso
+
   const linhas = document.querySelectorAll("#corpo-tabela tr");
+
   linhas.forEach((tr) => {
     const dataTexto = tr.children[0]?.textContent;
     if (!dataTexto) {
       tr.style.display = "none";
       return;
     }
+
     const [dia, mes, ano] = dataTexto.split("/");
-    const dataLinha = new Date(`${ano}-${mes}-${dia}T00:00:00`);
-    tr.style.display = dataLinha.getTime() === dataFiltro.getTime() ? "" : "none";
+    const dataLinhaISO = `${ano}-${mes}-${dia}`;
+
+    tr.style.display = dataLinhaISO === valorData ? "" : "none";
   });
 });
